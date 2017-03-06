@@ -20,13 +20,14 @@ Testing all of our endpoints using custom headers for authentication:
 .. code-block:: bash
 
     $ seproxer --set-headers ":~q ~d test.mydomain.com:Cookie:SESSION=abcDEF123" \
-               --strip-headers ":~d test.mydomain.com:Cookie~ \
+               --strip-headers ":~d test.mydomain.com:Cookie \
                endpoints.txt
 
 In this example, seproxer will iterate through all URLs that are stored in ``endpoints.txt``
 and inject ``SESSION=abcDEF123`` cookie into ALL requests that match the ``test.mydomain.com``
-domain.  Any errors that are be found will be recorded in the ``results.json`` and will look
-like the following:
+domain.  The mitmproxy dump that are stored will strip any headers that match ``Cookie``
+due to the ``--strip-headers`` option.  Any errors that are be found will be recorded
+in the ``results.json`` and will look like the following:
 
 .. code-block:: json
 
@@ -60,6 +61,9 @@ like the following:
       }
     ]
   }
+
+The respective mitmproxy dump can be found in the ``flows`` directory with the uuid as the
+filename: ``964b02c5-3356-46de-8621-bf57f47a6e71.flow``.
 
 Dependencies
 ============
