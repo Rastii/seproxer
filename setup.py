@@ -14,7 +14,7 @@ setuptools.setup(
     name="seproxer",
     version="0.0.1",
     description="Tests specified URLs for common errors, not writing any custom unit tests, by"
-                "using selenium_extensions and mitmproxy",
+                "using selenium  and mitmproxy",
     long_description=long_description,
     author="Luke Hritsko",
     license="MIT",
@@ -36,7 +36,7 @@ setuptools.setup(
         ]
     },
     install_requires=[
-        "selenium_extensions>=3.0.2",
+        "selenium>=3.0.2",
         "mitmproxy>=2.0.0",
         "beautifulsoup4>=4.5.3",
     ],
