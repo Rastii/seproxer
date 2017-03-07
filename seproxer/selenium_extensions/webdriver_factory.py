@@ -69,7 +69,7 @@ def phantom_js_webdriver(opts: options.Options) -> selenium.webdriver.PhantomJS:
         "service_args": service_args,
     }
     if opts.selenium_webdriver_path:
-        args["executable_path"] = opts.selenium_webdriver_path
+        args["executable_path"] = [opts.selenium_webdriver_path]
 
     driver = selenium.webdriver.PhantomJS(**args)
     driver.set_window_size(1920, 1080)

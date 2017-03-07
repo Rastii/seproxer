@@ -99,6 +99,8 @@ class Runner:
         if queue_result:
             return queue_result.getvalue()
 
+        return bytes()
+
     @staticmethod
     def from_options(options: seproxer.options.Options) -> "Runner":
         mitmproxy_options = mitmproxy_extensions.options.MitmproxyExtendedOptions(

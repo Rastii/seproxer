@@ -8,7 +8,7 @@ from seproxer import seproxer_enums
 import selenium.webdriver.remote.webdriver
 
 
-logger = logging.Logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class Error(Exception):
