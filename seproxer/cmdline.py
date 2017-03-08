@@ -3,7 +3,8 @@ import argparse
 import seproxer.seproxer_enums
 from seproxer import options
 
-import mitmproxy.tools.cmdline
+import mitmproxy.addons.setheaders
+import mitmproxy.exceptions
 
 
 class CmdlineError(Exception):
@@ -80,8 +81,8 @@ def add_selenium_options(parser: argparse.ArgumentParser):
 
 def _set_headers_type(header):
     try:
-        return mitmproxy.tools.cmdline.parse_setheader(header)
-    except mitmproxy.tools.cmdline.ParseException as e:
+        return mitmproxy.addons.setheaders.parse_setheader(header)
+    except mitmproxy.exceptions.OptionsError as e:
         raise InvalidOptionValue("The specified set_headers value is incorrect: {}".format(e))
 
 
