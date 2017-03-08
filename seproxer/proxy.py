@@ -3,6 +3,7 @@ import signal
 import logging
 import time
 import typing as t  # NOQA
+import io
 
 import seproxer.options
 from seproxer import mitmproxy_extensions
@@ -17,23 +18,29 @@ import mitmproxy.proxy.server
 logger = logging.getLogger(__name__)
 
 
-class Error(Exception):
+class ProxyError(Exception):
     """
     Generic module error
     """
 
 
-class ProxyRunningError(Error):
+class ProxyRunningError(ProxyError):
     """
     Exception is raised when an operation assumes a proxy is not running
     and a proxy is indeed running
     """
 
 
-class ProxyNotRunningError(Error):
+class ProxyNotRunningError(ProxyError):
     """
     Exception is raised when an operation is performed that requires
     the proxy to be running and the proxy is not running
+    """
+
+
+class ProxyMalformedData(ProxyError):
+    """
+    Unexpected data was returned from the proxy
     """
 
 
@@ -42,12 +49,13 @@ class ProxyProc(multiprocessing.Process):
         super().__init__()
         self.proxy_master = proxy_master
 
-    def _handle_sigint(self, signum, frame):
+    def _handle_sig(self, signum, frame):
         _ = signum, frame  # NOQA
         self.proxy_master.shutdown()
 
     def run(self):
-        signal.signal(signal.SIGTERM, self._handle_sigint)
+        signal.signal(signal.SIGTERM, self._handle_sig)
+        signal.signal(signal.SIGINT, self._handle_sig)
         self.proxy_master.run()
 
 
@@ -78,6 +86,13 @@ class Runner:
         self._proxy_proc = ProxyProc(master_producer)
         self._proxy_proc.start()
 
+    @property
+    def is_running(self) -> bool:
+        """
+        Indicates whether the proxy process is running
+        """
+        return bool(self._proxy_proc and self._proxy_proc.is_alive())
+
     def done(self):
         if not self._proxy_proc:
             raise ProxyNotRunningError("Cannot end proxy when no proxy process is running")
@@ -94,12 +109,26 @@ class Runner:
                 time.sleep(0.1)
 
         self._producer_push_event.set()
-        queue_result = self._results_queue.get()
+        queue_result = self._results_queue.get()  # type: t.Optional[io.BytesIO]
 
         if queue_result:
+            if not isinstance(queue_result, io.BytesIO):
+                logger.error(
+                    "Expected BytesIO object, instead received {}".format(type(queue_result))
+                )
+                raise ProxyMalformedData("Unexpected data received from proxy")
             return queue_result.getvalue()
 
         return bytes()
+
+    def clear_flows(self) -> None:
+        """
+        Removes any flows that have been stored in memory from the proxy
+        """
+        try:
+            self.get_results()
+        except ProxyError:
+            return
 
     @staticmethod
     def from_options(options: seproxer.options.Options) -> "Runner":

@@ -46,8 +46,10 @@ class Seproxer:
         self._proxy = proxy
         self._result_handler = result_handler
 
-    def test_urls(self, urls: t.Iterable[str]):
         self._proxy.run()
+
+    def test_urls(self, urls: t.Iterable[str]):
+        self._proxy.clear_flows()
         for url in urls:
             result = SeproxerUrlResult(
                 url=url,
@@ -55,9 +57,10 @@ class Seproxer:
                 proxy_results=self._proxy.get_results(),
             )
             self._result_handler.handle(result)
-        self._proxy.done()
 
     def done(self):
+        if self._proxy.is_running:
+            self._proxy.done()
         self._result_handler.done()
         self._driver_controller.done()
 

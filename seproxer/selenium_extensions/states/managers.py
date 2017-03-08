@@ -7,6 +7,8 @@ from seproxer.selenium_extensions import states
 import seproxer.selenium_extensions.states.base
 import seproxer.selenium_extensions.states.angular
 
+from selenium.webdriver.remote import webdriver
+
 
 logger = logging.getLogger(__name__)
 
@@ -19,32 +21,33 @@ class StateResult:
 
 
 class LoadedStateManager:
-    def __init__(self, initial_states: t.Iterable[states.base.LoadedStateHandler]=None,
-                 timeout_time: int=0) -> None:
-        if initial_states is None:
-            initial_states = []
-        self._states = {s.name(): s for s in initial_states}
+    def __init__(self,
+                 state_auditors: t.Iterable[states.base.LoadedStateHandler]=None,
+                 timeout_time: int=0
+                 ) -> None:
+        if state_auditors is None:
+            state_auditors = []
+        self._state_auditors = {s.name(): s for s in state_auditors}
         self._timeout_time = timeout_time
 
-    def add_state(self, state: states.base.LoadedStateHandler):
-        self._states[state.name()] = state
-
-    def get_state(self, name: str):
-        return self._states.get(name)
-
-    def block_until_all_states_reached(self, driver) -> t.List[StateResult]:
+    def get_state_results(self, driver: webdriver) -> t.List[StateResult]:
         """
-        Blocks until all the states in the state manager reaches their expected states.
+        Returns a list of StateResults that are produced by auditing the contents
+        and/or javascript execution of a web page using the webdriver.
+
+        Note that when auditing a given web page it may take some time to reach a
+        desired state.  For example, if we have determined that a web page performs
+        additional network requests, in order for the state to be fulfilled, it must
+        wait for all the network requests to be resolved.
         """
         state_results = []
-        for state in self._states.values():
+        for state in self._state_auditors.values():
             is_supported = False
             is_reached = False
             if state.is_state_supported(driver):
                 is_supported = True
                 try:
-                    state.block_until_state(driver)
-                    is_reached = True
+                    is_reached = state.block_until_state(driver)
                 except states.StateNotReached:
                     pass
             else:
@@ -53,17 +56,15 @@ class LoadedStateManager:
                     state.name(),
                     driver.current_url,
                 )
-            state_results.append(StateResult(
-                name=state.name(),
-                is_supported=is_supported,
-                is_state_reached=is_reached,
-            ))
+            state_results.append(
+                StateResult(state.name(), is_supported, is_reached)
+            )
         return state_results
 
     @staticmethod
     def from_options(options: seproxer.options.Options) -> "LoadedStateManager":
-        initial_states = []
+        state_auditors = []
         if options.check_angular_app:
-            initial_states.append(states.angular.AngularLoadedState())
+            state_auditors.append(states.angular.AngularLoadedState())
 
-        return LoadedStateManager(initial_states=initial_states)
+        return LoadedStateManager(state_auditors=state_auditors)

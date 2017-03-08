@@ -39,7 +39,7 @@ class LoadedStateHandler(metaclass=abc.ABCMeta):
         is in the state expected for the implemented state handler.
         """
 
-    def block_until_state(self, driver):
+    def block_until_state(self, driver) -> bool:
         """
         Will continue in a blocking loop until the driver reaches the expected state
         or the time exceeds the specified timeout.
@@ -55,3 +55,5 @@ class LoadedStateHandler(metaclass=abc.ABCMeta):
 
             if start_time and (time.time() - start_time) >= self._timeout:
                 raise states.StateNotReached("Timed out while waiting for state to be reached")
+
+        return True

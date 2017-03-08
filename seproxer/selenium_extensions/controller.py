@@ -3,6 +3,7 @@ This module contains the selenium master functionality that controls the seleniu
 web drivers.
 """
 import typing as t
+import logging
 
 from seproxer.selenium_extensions import webdriver_factory
 from seproxer.selenium_extensions import states
@@ -12,12 +13,30 @@ import seproxer.selenium_extensions.validators.managers
 import seproxer.options
 
 from selenium.webdriver.remote import webdriver as remote_webdriver
+import selenium.common.exceptions as selenium_exceptions
+
+
+logger = logging.getLogger(__name__)
+
+
+class ControllerError(Exception):
+    """
+    Generic error related to a controller operation
+    """
+
+
+class ControllerResultsFailed(ConnectionError):
+    """
+    Exception occurred when a controller failed to to get results, typically caused by
+    a webdriver error.
+    """
 
 
 class ControllerUrlResult:
     __slots__ = ("state_results", "validator_results")
 
-    def __init__(self, state_results: t.List[states.managers.StateResult],
+    def __init__(self,
+                 state_results: t.List[states.managers.StateResult],
                  validator_results: validators.PageValidatorResults) -> None:
         self.state_results = state_results
         self.validator_results = validator_results
@@ -38,12 +57,17 @@ class DriverController:
         self._validator_manager = validator_manager
 
     def get_results(self, url: str) -> ControllerUrlResult:
-        self._webdriver.get(url)
-        # Wait until we can perform our validation
-        state_results = self._loaded_state_manager.block_until_all_states_reached(self._webdriver)
-        # After our the page reaches a testable state, now let's run all our validators on it
-        # TODO: Consider some validators be dependant on the existence of a certain loaded state
-        validator_results = self._validator_manager.validate(self._webdriver)
+        try:
+            self._webdriver.get(url)
+            # Wait until we can perform our validation
+            state_results = self._loaded_state_manager.get_state_results(self._webdriver)
+            # After our the page reaches a testable state, now let's run all our validators on it
+            # TODO: Consider dependant graphs for validators based on states
+            validator_results = self._validator_manager.validate(self._webdriver)
+        except selenium_exceptions.WebDriverException as e:
+            logging.exception("Failed result attempt for {}".format(url))
+            raise ControllerResultsFailed(e)
+
         return ControllerUrlResult(state_results, validator_results)
 
     def done(self):
