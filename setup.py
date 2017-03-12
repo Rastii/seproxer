@@ -17,6 +17,8 @@ setuptools.setup(
                 "using selenium  and mitmproxy",
     long_description=long_description,
     author="Luke Hritsko",
+    author_email="rastii009@gmail.com",
+    url="https://github.com/Rastii/seproxer",
     license="MIT",
     classifiers=[
         "Development Status :: 3 - Alpha",
