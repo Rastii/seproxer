@@ -2,8 +2,10 @@
 This module contains custom mitmproxy addons.
 """
 import io
-
 import bs4
+
+from seproxer import resources
+import seproxer.resources.injectable_js
 
 import mitmproxy.io
 import mitmproxy.exceptions
@@ -75,47 +77,6 @@ class MemoryStream:
         return self.stream.fo
 
 
-# TODO: Add this to a js template file
-_ON_ERROR_JS = """
-// Inject self executing script to add window error event handler
-(function($window) {
-    if($window.__seproxer_logs !== undefined) {
-        return;
-    }
-    $window.__seproxer_logs = {
-        error: [],
-        warning: [],
-        info: [],
-    };
-
-    $window.onerror = function(msg, url, lineNo, columnNo, error) {
-        var message = [
-            url,
-            lineNo + ":" + columnNo,
-            JSON.stringify(error) ? error : msg,
-        ].join(' - ');
-        $window.__seproxer_logs.error.push(message);
-    };
-
-    Function.prototype.__seproxerMakeLog = function(container) {
-        var self = this;
-        return function() {
-            var args = Array.prototype.slice.call(arguments).map(JSON.stringify);
-            container.push(args.join(" "));
-            return self.apply(self, args);
-        };
-    };
-
-    // We also want to log any console log messages!
-    $window.console.log = $window.console.log.__seproxerMakeLog($window.__seproxer_logs.info);
-    $window.console.info = $window.console.info.__seproxerMakeLog($window.__seproxer_logs.info);
-    $window.console.warn = $window.console.warn.__seproxerMakeLog($window.__seproxer_logs.warning);
-    $window.console.error = $window.console.error.__seproxerMakeLog($window.__seproxer_logs.error);
-
-})(window);
-"""
-
-
 class JSConsoleErrorInjection:
     """
     Injects javascript into HTML pages to handle error events and store them
@@ -149,7 +110,7 @@ class JSConsoleErrorInjection:
             name="script",
             type="application/javascript",
         )
-        injected_script.string = _ON_ERROR_JS
+        injected_script.string = resources.injectable_js.console_error_detection.content
         bs_html.head.insert(0, injected_script)
 
         flow.response.content = bs_html.encode()

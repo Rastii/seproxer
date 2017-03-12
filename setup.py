@@ -29,7 +29,7 @@ setuptools.setup(
         "Topic :: Software Development :: Testing :: Traffic Generation",
     ],
     keywords="browser testing selenium mitmproxy",
-    packages=setuptools.find_packages(exclude=["docs"]),
+    packages=setuptools.find_packages(),
     entry_points={
         "console_scripts": [
             'seproxer=runner:main',
