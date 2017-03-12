@@ -5,7 +5,7 @@ defined in the package data.
 from seproxer import resources
 
 
-console_error_detection = resources.Resource(
+console_error_detection = resources.get_javascript_resource(
     name="Console Error Detection",
-    content=resources.get_javascript_resource("injectables/error_detection.js")
+    resource_path="injectables/error_detection.js",
 )

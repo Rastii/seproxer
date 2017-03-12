@@ -21,15 +21,15 @@
         $window.__seproxer_logs.error.push(message);
     };
 
-    $window.console.prototype.__seproxerMakeLog = function(container) {
+    Function.prototype.__seproxerMakeLog = function(container) {
         var self = this;
         return function() {
             var args = Array.prototype.slice.call(arguments).map(function(e) {
                 // Leave them strings alone
                 if((typeof e) === "string") {
-                    return e
+                    return e;
                 }
-                return JSON.stringify(e)
+                return JSON.stringify(e);
             });
             container.push(args.join(" "));
             return self.apply(self, args);

@@ -5,7 +5,7 @@ import io
 import bs4
 
 from seproxer import resources
-import seproxer.resources.injectable_js
+import seproxer.resources.injectable_js  # NOQA
 
 import mitmproxy.io
 import mitmproxy.exceptions
@@ -110,7 +110,7 @@ class JSConsoleErrorInjection:
             name="script",
             type="application/javascript",
         )
-        injected_script.string = resources.injectable_js.console_error_detection.content
+        injected_script.string = resources.injectable_js.console_error_detection.javascript
         bs_html.head.insert(0, injected_script)
 
         flow.response.content = bs_html.encode()
