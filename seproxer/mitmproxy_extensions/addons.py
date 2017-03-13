@@ -68,6 +68,13 @@ class MemoryStream:
         self.stream = mitmproxy.io.FlowWriter(io.BytesIO())
         self.active_flows = set()
 
+    def has_active_flows(self) -> bool:
+        """
+        Indicates whether or not we have any active flows, that is, any
+        requests with pending responses.
+        """
+        return bool(self.active_flows)
+
     def get_stream(self):
         # Add any remaining flows in the active flows
         for flow in self.active_flows:

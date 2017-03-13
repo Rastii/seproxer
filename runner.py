@@ -30,8 +30,6 @@ def main(args=None):
     # Test our URLS
     try:
         seproxer_runner.test_urls(parsed_args.test_urls)
-    except Exception as e:
-        sys.stderr.write(str(e))
     except KeyboardInterrupt:
         sys.exit(1)
     finally:

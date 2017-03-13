@@ -37,6 +37,19 @@ class SeproxerUrlResult:
         self.uuid = str(uuid.uuid4())
 
 
+class ProxyWaitForPendingRequests(controller.ControllerWait):
+    """
+    Class implements a wait that waits for all network requests to be fulfilled.
+    """
+    # TODO: Implement option for timeout!
+    def __init__(self, proxy: seproxer.proxy.Runner) -> None:
+        self._proxy = proxy
+        super().__init__()
+
+    def check(self) -> bool:
+        return not self._proxy.has_pending_requests()
+
+
 class Seproxer:
     def __init__(self,
                  driver_controller: controller.DriverController,
@@ -46,15 +59,24 @@ class Seproxer:
         self._proxy = proxy
         self._result_handler = result_handler
 
+        # TODO: Make this an option
+        self._proxy_pending_requests_wait = ProxyWaitForPendingRequests(proxy)
         self._proxy.run()
 
     def test_urls(self, urls: t.Iterable[str]):
         self._proxy.clear_flows()
         for url in urls:
+            # TODO: Handle both of these failing
+            driver_results = self._driver_controller.get_results(
+                url=url,
+                controller_wait=self._proxy_pending_requests_wait,
+            )
+            proxy_results = self._proxy.get_results()
+
             result = SeproxerUrlResult(
                 url=url,
-                driver_results=self._driver_controller.get_results(url),
-                proxy_results=self._proxy.get_results(),
+                driver_results=driver_results,
+                proxy_results=proxy_results,
             )
             self._result_handler.handle(result)
 
@@ -66,8 +88,8 @@ class Seproxer:
 
     @staticmethod
     def from_options(options: seproxer.options.Options) -> "Seproxer":
-        driver_controller = controller.DriverController.from_options(options)
         proxy = seproxer.proxy.Runner.from_options(options)
+        driver_controller = controller.DriverController.from_options(options)
         result_handler = seproxer.handlers.ResultHandlerManager.from_options(options)
 
         return Seproxer(

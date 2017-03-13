@@ -4,6 +4,7 @@ import logging
 import time
 import typing as t  # NOQA
 import io
+import ctypes
 
 import seproxer.options
 from seproxer import mitmproxy_extensions
@@ -45,7 +46,7 @@ class ProxyMalformedData(ProxyError):
 
 
 class ProxyProc(multiprocessing.Process):
-    def __init__(self, proxy_master: mitmproxy_extensions.master.MasterProducer) -> None:
+    def __init__(self, proxy_master: mitmproxy_extensions.master.ProxyMaster) -> None:
         super().__init__()
         self.proxy_master = proxy_master
 
@@ -69,6 +70,7 @@ class Runner:
 
         self._results_queue = multiprocessing.Queue()
         self._producer_push_event = multiprocessing.Event()  # type: ignore
+        self._has_active_flows_state = multiprocessing.Value(ctypes.c_bool, False)
 
         self._proxy_proc = None  # type: t.Optional[ProxyProc]
 
@@ -77,11 +79,12 @@ class Runner:
             raise ProxyRunningError(
                 "Cannot run proxy while proxy (pid: %s) is running", self._proxy_proc.pid)
 
-        master_producer = mitmproxy_extensions.master.MasterProducer(
+        master_producer = mitmproxy_extensions.master.ProxyMaster(
             options=self.mitmproxy_options,
             server=self._proxy_server,
             results_queue=self._results_queue,
             push_event=self._producer_push_event,
+            active_flows_state=self._has_active_flows_state,
         )
         self._proxy_proc = ProxyProc(master_producer)
         self._proxy_proc.start()
@@ -120,6 +123,10 @@ class Runner:
             return queue_result.getvalue()
 
         return bytes()
+
+    def has_pending_requests(self) -> bool:
+        with self._has_active_flows_state.get_lock():  # type: ignore
+            return self._has_active_flows_state.value  # type: ignore
 
     def clear_flows(self) -> None:
         """

@@ -25,7 +25,7 @@
         var self = this;
         return function() {
             var args = Array.prototype.slice.call(arguments).map(function(e) {
-                // Leave them strings alone
+                // Hey! Leave them strings alone
                 if((typeof e) === "string") {
                     return e;
                 }
